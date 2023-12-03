@@ -1,0 +1,1016 @@
+#include <iostream>
+#include<cstdlib>
+#include<ctime>
+#include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
+
+using namespace std;
+using namespace sf;
+// Initializing Dimensions.
+// resolutionX and resolutionY determine the rendering resolution.
+// Don't edit unless required. Use functions on lines 43, 44, 45 for resizing the game window.
+const int resolutionX = 960;
+const int resolutionY = 960;
+const int boxPixelsX = 32;
+const int boxPixelsY = 32;
+const int gameRows = resolutionX / boxPixelsX; // Total rows on grid
+const int gameColumns = resolutionY / boxPixelsY; // Total columns on grid
+
+// Initializing GameGrid.
+int gameGrid[gameRows][gameColumns] = {};
+
+// The following exist purely for readability.
+const int x = 0;
+const int y = 1;
+const int exists = 2; 
+int ShootChecker=0;
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Write your functions declarations here. Some have been written for you. //
+void movePlayer(float player[][2], float bullet[][3], sf::Event Event, bool &BulletShoot, float Mushroom[][6]);
+void drawMushroom(sf::RenderWindow& window, float Mushroom[][6],sf::Sprite& MushroomSprite, sf::Sprite& MushroomSpriteHalf,
+	int& MushroomChecker, sf::Sprite& MushroomSpritePoison,sf::Sprite& MushroomSpritePoisonHalf, int RandomLocation);  
+
+void ShootCheckMushroom(float Mushroom[][6], float bullet[][3], float player[][2], bool &BulletShoot, float Centipede[][6], int& Score, int& PosionMushroonNumber);
+void MoveCentipedeOneRow(sf::RenderWindow& window, float Centipede[][6], sf::Sprite& CentipedeSprite, sf::Sprite& CentipedeHeadSprite
+	,bool& CentipedeDirection, float Mushroom[][6], bool& CentipedeMushroomEdge0, bool& CentipedeMushroomEdge1, bool& CentipedeHitBottom
+	,int& CentipedeHitBottomCount, sf::Sprite& CentipedeHeadSpriteR, bool& HeadSpriteTime, int& speed, int& level, sf::Sprite& CentipedeSprite2, 
+	sf::Sprite& CentipedeHeadSprite2, sf::Sprite& CentipedeHeadSprite2R,sf::Sprite& CentipedeSprite3, 
+	sf::Sprite& CentipedeHeadSprite3, sf::Sprite& CentipedeHeadSprite3R, int& lives);
+
+void drawCentipede(sf::RenderWindow& window, float Centipede[][6], sf::Sprite& CentipedeSprite, sf::Sprite& CentipedeHeadSprite, int& i, int& level,
+					sf::Sprite& CentipedeSprite2, sf::Sprite& CentipedeHeadSprite2,sf::Sprite& CentipedeSprite3, sf::Sprite& CentipedeHeadSprite3);
+void drawCentipedeHead(sf::RenderWindow& window, float Centipede[][6], sf::Sprite& CentipedeHeadSprite,sf::Sprite& CentipedeHeadSpriteR, int& i,int& level,
+						sf::Sprite& CentipedeHeadSprite2,sf::Sprite& CentipedeHeadSprite2R,sf::Sprite& CentipedeHeadSprite3,sf::Sprite& CentipedeHeadSprite3R);
+						void CheckCentipedeCollision(float Centipede[][6], bool& CentipedeDirection, int& i, bool& CentipedeHitBottom, int& CentipedeHitBottomCount,
+						bool& HeadSpriteTime);
+
+void MushroomCentipede(float Mushroom[][6], float Centipede[][6], bool& CentipedeMushroomEdge0, bool& CentipedeMushroomEdge1, int&i);  
+void PlayerCentipede(float player[][2], float Centipede[][6], float bullet[][3], int& lives, bool& NewLifeCheck, bool& HeadSpriteTime,
+ 					sf::SoundBuffer& KillBuffer);  
+
+void ShootCheckCentipede(float Centipede[][6], float bullet[][3], float player[][2], bool &BulletShoot, float Mushroom[][6], int& MushroomChecker,
+						int RandomLocation, bool& HeadSpriteTime, int& speed, int& score, bool& NewLifeCheck, int& lives, int& level, int& PoisonMushroomNumber);
+void PoisonMushroomCheck(float Mushroom[][6], float player[][2], float bullet[][3], int& lives, bool& NewLifeCheck, bool& HeadSpriteTime,
+ 						sf::SoundBuffer& KillBuffer);
+
+void drawLives(sf::RenderWindow& window, float Life[][2], sf::Sprite& LivesSprite, int& lives);
+void drawFlea(sf::RenderWindow& window, float Flea[][2], sf::Sprite& FleaSprite, float Mushroom[][6]);
+
+void drawPlayer(sf::RenderWindow& window, float player[][2], sf::Sprite& playerSprite);
+void moveBullet(float bullet[][3], sf::Clock& bulletClock,float player[][2], bool &BulletShoot);
+void drawBullet(sf::RenderWindow& window, float bullet[][3], sf::Sprite& bulletSprite);
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int main()
+{
+	////////////////////////INITIALIZING BOOLS AND INTIGERS WHICH WE WILL NEED FOR THE APPLIACTIONS OF FUNCTIONS
+	int CentipedeHitBottomCount = 0;
+	int speed=1;
+	bool NewLifeCheck=false;
+	bool CentipedeMushroomEdge1 = false;
+    bool CentipedeMushroomEdge0 = false;
+    bool CentipedeHitBottom = false;
+	bool BulletShoot=false;
+	bool CentipedeDirection=false;
+	bool HeadSpriteTime=false;
+	int Score=0;
+    int lives=2;
+	int level=1;
+	int PoisonMushroomNumber=0;
+	int soundcheck=0;
+	int DeathSoundCheck=0;
+
+	srand(time(0));
+	//////////////////////////////////////////////////////
+	
+	// Declaring RenderWindow.
+	sf::RenderWindow window(sf::VideoMode(resolutionX, resolutionY), "Best Game in The World", sf::Style::Close | sf::Style::Titlebar);
+	bool bulletFire = false;
+	sf::Clock bulletFireClock;
+	// Used to resize your window if it's too big or too small. Use according to your needs.
+	//window.setSize(sf::Vector2u(640, 640)); // Recommended for 1366x768 (768p) displays.
+	// window.setSize(sf::Vector2u(1280, 1280)); // Recommended for 2560x1440 (1440p) displays.
+	// window.setSize(sf::Vector2u(1920, 1920)); // Recommended for 3840x2160 (4k) displays.
+	
+	// Used to position your window on every launch. Use according to your needs.
+	window.setPosition(sf::Vector2i(100, 0));
+	window.setFramerateLimit(120);
+	
+	//INITILIZING FONT TO DISPLAY THE SCORE ON THE SCREEN//////////////ALL FONTS////////////////////////////////////////////
+	sf::Font ScoreFont;
+	if(!ScoreFont.loadFromFile("Text/RetroGaming.ttf"));
+	{
+		ScoreFont.loadFromFile("Text/INVASION2000.TTF");
+	}
+	sf::Text ScoreText;
+	ScoreText.setFont(ScoreFont);
+	ScoreText.setCharacterSize(32);
+	ScoreText.setString(to_string(Score));
+	ScoreText.setFillColor(sf::Color::White);
+	ScoreText.setPosition(0,28*boxPixelsY);
+
+	//INITILIZING FONT TO DISPLAY THE LEVEL NUMBER ON THE SCREEN
+	sf::Font LevelNumberFont;
+	if(!LevelNumberFont.loadFromFile("Text/RetroGaming.ttf"));
+	{
+		LevelNumberFont.loadFromFile("Text/INVASION2000.TTF");
+	}
+	sf::Text LevelNumberText;
+	LevelNumberText.setFont(LevelNumberFont);
+	LevelNumberText.setCharacterSize(32);
+	LevelNumberText.setString(to_string(level));
+	LevelNumberText.setFillColor(sf::Color::White);
+	LevelNumberText.setPosition(16*boxPixelsX,28*boxPixelsY);
+
+	//INITILIZING FONT TO DISPLAY THE LEVELS ON THE SCREEN
+	sf::Font LevelFont;
+	if(!LevelFont.loadFromFile("Text/RetroGaming.ttf"));
+	{
+		LevelFont.loadFromFile("Text/INVASION2000.TTF");
+	}
+	sf::Text LevelText;
+	LevelText.setFont(LevelFont);
+	LevelText.setCharacterSize(32);
+	LevelText.setString("Level ");
+	LevelText.setFillColor(sf::Color::White);
+	LevelText.setPosition(10*boxPixelsX,28*boxPixelsY);	
+	
+	//INITILIZING FONT TO DISPLAY THE FINAL SCORE ON THE SCREEN
+	sf::Font FinalFont;
+	if(!FinalFont.loadFromFile("Text/INVASION2000.TTF"));
+	{
+		FinalFont.loadFromFile("Text/RetroGaming.ttf");
+	}
+	sf::Text FinalText;
+	FinalText.setFont(FinalFont);
+	FinalText.setCharacterSize(64);
+	FinalText.setString("YOUR SCORE WAS");
+	FinalText.setFillColor(sf::Color::White);
+	FinalText.setPosition(5*boxPixelsX,15*boxPixelsY);
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
+///////////////////////// Initializing Background Music.//////////////////ALL MUSIC AND SOUND EFFECTS///////////////////////////////////////
+	sf::Music bgMusic;
+	bgMusic.openFromFile("Music/field_of_hopes.ogg");
+	bgMusic.play();
+	bgMusic.setVolume(50);
+	bgMusic.setLoop(100);
+	
+// Initializing sound effect of Bullet//////////////////////
+	sf::SoundBuffer shootingSoundBuffer;
+	if (!shootingSoundBuffer.loadFromFile("SoundEffects/fire1.wav")) 
+	{
+		return -1;
+	}
+	sf::Sound shootingSound;
+	shootingSound.setBuffer(shootingSoundBuffer);
+
+// Initializing sound effect of Death/////////////////////////
+	sf::SoundBuffer MoyeBuffer;
+	if (!MoyeBuffer.loadFromFile("SoundEffects/MoyeMoye.wav")) 
+	{
+		return -1;
+	}
+	sf::Sound MoyeSound;
+	MoyeSound.setBuffer(MoyeBuffer);
+
+/////////////////// Initializing sound effect of FLEA///////
+	sf::SoundBuffer FleaBuffer;
+	if (!FleaBuffer.loadFromFile("SoundEffects/flea.wav")) 
+	{
+		return -1;
+	}
+	sf::Sound FleaSound;
+	FleaSound.setBuffer(FleaBuffer);
+
+/////////////// Initializing sound effect of Kill/////////
+	sf::SoundBuffer KillBuffer;
+	if (!KillBuffer.loadFromFile("SoundEffects/kill.wav")) 
+	{
+		return -1;
+	}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////// Initializing Background./////////////////////////Initializing ALL SPRITES//////////////////////////////////////////////////
+	sf::Texture backgroundTexture;
+	sf::Sprite backgroundSprite;
+	backgroundTexture.loadFromFile("Textures/back.png");
+	backgroundSprite.setTexture(backgroundTexture);
+	backgroundSprite.setColor(sf::Color(255, 255, 255, 255*0.20)); // Reduces Opacity to 25%
+
+////////////////////////////////// Initializing Player and Player Sprites.
+	float player[1][2] = {};
+	player[0][0] = (gameColumns / 2) * boxPixelsX;
+	player[0][1] = (gameColumns * 3 / 4) * boxPixelsY;
+	sf::Texture playerTexture;
+	sf::Sprite playerSprite;
+	playerTexture.loadFromFile("Textures/player.png");
+	playerSprite.setTexture(playerTexture);
+	playerSprite.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+
+/////////////////////////////////////////////////////////////Lives Sprites
+	float Life[2][2];
+	sf::Texture LivesTexture;
+	sf::Sprite LivesSprite;
+	LivesTexture.loadFromFile("Textures/Heart.png");
+	LivesSprite.setTexture(LivesTexture);
+	LivesSprite.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+	
+////////////////////////////////////////////////////////////// Initializing Mushroom Sprites
+	int MushroomChecker=0;
+
+	float Mushroom[2000][6]={};
+	sf::Texture MushroomTexture;
+	sf::Sprite MushroomSprite;
+	MushroomTexture.loadFromFile("Textures/mushroom.png");
+	MushroomSprite.setTexture(MushroomTexture);
+	MushroomSprite.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+	sf::Texture MushroomTextureHalf;
+	sf::Sprite MushroomSpriteHalf;
+	MushroomTextureHalf.loadFromFile("Textures/mushroom.png");
+	MushroomSpriteHalf.setTexture(MushroomTextureHalf);
+	MushroomSpriteHalf.setTextureRect(sf::IntRect(64, 0, boxPixelsX, boxPixelsY));
+
+////////////////////////////////////////////////////////////// Initializing Poisonous Mushroom Sprites
+	
+	sf::Texture MushroomTexturePoison;
+	sf::Sprite MushroomSpritePoison;
+	MushroomTexturePoison.loadFromFile("Textures/mushroom.png");
+	MushroomSpritePoison.setTexture(MushroomTexturePoison);
+	MushroomSpritePoison.setTextureRect(sf::IntRect(0, 32, boxPixelsX, boxPixelsY));
+
+	sf::Texture MushroomTexturePoisonHalf;
+	sf::Sprite  MushroomSpritePoisonHalf;
+	MushroomTexturePoisonHalf.loadFromFile("Textures/mushroom.png");
+	MushroomSpritePoisonHalf.setTexture(MushroomTexturePoisonHalf);
+	MushroomSpritePoisonHalf.setTextureRect(sf::IntRect(64, 32, boxPixelsX, boxPixelsY));
+
+/////////////////////////////////////////////////Initiallizing the Centipede!!!!! and Sprites in LEVEL 1
+///////////CENTIPEDE ARRAY INITIALIZATION AND BODY SEGMENT SPRITES	
+	float Centipede[20][6]={};
+	sf::Texture CentipedeTexture;
+	sf::Sprite CentipedeSprite;
+	CentipedeTexture.loadFromFile("Textures/c_body_left_walk.png");
+	CentipedeSprite.setTexture(CentipedeTexture);
+	CentipedeSprite.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+
+///////////CENTIPEDE HEAD SPRITE LEFT DIRECTION INITIALIZATION	
+	sf::Texture CentipedeHeadTexture;
+	sf::Sprite CentipedeHeadSprite;
+	CentipedeHeadTexture.loadFromFile("Textures/c_head_left_walk.png");
+	CentipedeHeadSprite.setTexture(CentipedeHeadTexture);
+	CentipedeHeadSprite.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+
+///////////CENTIPEDE HEAD SPRITE RIGHT DIRECTION INITIALIZATION	
+	sf::Texture CentipedeHeadTextureR;
+	sf::Sprite CentipedeHeadSpriteR;
+	CentipedeHeadTextureR.loadFromFile("Textures/HeadRight.png");
+	CentipedeHeadSpriteR.setTexture(CentipedeHeadTextureR);	
+	CentipedeHeadSpriteR.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+
+////////////////////////////////////////////////////////////////////LEVEL 2 amd level(n%3==2) Sprites
+////////////////////////////////BODY SEGMENTS	
+	sf::Texture CentipedeTexture2;
+	sf::Sprite CentipedeSprite2;
+	CentipedeTexture2.loadFromFile("Textures/LEVEL2B.png");
+	CentipedeSprite2.setTexture(CentipedeTexture2);
+	CentipedeSprite2.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+/////////////////////////////HEAD LEFT DIRECTION	
+	sf::Texture CentipedeHeadTexture2;
+	sf::Sprite CentipedeHeadSprite2;
+	CentipedeHeadTexture2.loadFromFile("Textures/LEVEL2HL.png");
+	CentipedeHeadSprite2.setTexture(CentipedeHeadTexture2);
+	CentipedeHeadSprite2.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+////////////////////////////HEAD RIGHT DIRECTION	
+	sf::Texture CentipedeHeadTexture2R;
+	sf::Sprite CentipedeHeadSprite2R;
+	CentipedeHeadTexture2R.loadFromFile("Textures/LEVEL2HR.png");
+	CentipedeHeadSprite2R.setTexture(CentipedeHeadTexture2R);	
+	CentipedeHeadSprite2R.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));	
+
+//////////////////////////////////////////////////////////////////LEVEL 3 amd level(n%3==0) Sprites
+////////////////////////////////BODY SEGMENTS	
+	
+	sf::Texture CentipedeTexture3;
+	sf::Sprite CentipedeSprite3;
+	CentipedeTexture3.loadFromFile("Textures/LEVEL3B.png");
+	CentipedeSprite3.setTexture(CentipedeTexture3);
+	CentipedeSprite3.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+	
+////////////////////////////HEAD RIGHT DIRECTION	
+	sf::Texture CentipedeHeadTexture3;
+	sf::Sprite CentipedeHeadSprite3;
+	CentipedeHeadTexture3.loadFromFile("Textures/LEVEL3HL.png");
+	CentipedeHeadSprite3.setTexture(CentipedeHeadTexture3);
+	CentipedeHeadSprite3.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+
+////////////////////////////HEAD RIGHT DIRECTION	
+	sf::Texture CentipedeHeadTexture3R;
+	sf::Sprite CentipedeHeadSprite3R;
+	CentipedeHeadTexture3R.loadFromFile("Textures/LEVEL3HR.png");
+	CentipedeHeadSprite3R.setTexture(CentipedeHeadTexture3R);	
+	CentipedeHeadSprite3R.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+	
+/////////////////////////////////////////////////////VALUES OF CENTIPEDE ON GRID
+	int RandomLocation = (rand()%20)*boxPixelsY;
+	for(int i=0, j=RandomLocation, k=384; i<12; k+=32, i++)
+		{
+			Centipede[i][3]=0;
+            Centipede[i][0]=k;
+			Centipede[i][1]=j;
+			Centipede[i][5]=0;
+			Centipede[i][4]=0;
+			if(i>0 && MushroomChecker==0)
+			Centipede[i][2]=0;
+			else if(i==0 && MushroomChecker==0)
+			Centipede[i][2]=1;
+		}
+//////////////////////////////Initializing the Head Sprites that will come in the end
+		for(int i=12,k=31, j=22; i<15; i++, j++, k+=29)
+		{
+			Centipede[i][3]=0;
+            Centipede[i][0]=k*boxPixelsX;
+			Centipede[i][1]=j*boxPixelsY;
+			Centipede[i][4]=0;
+			Centipede[i][2]=1;
+		}
+
+////////////////////////////////////////////// Initializing Bullet and Bullet Sprites.
+	float bullet[1][3] = {};
+	bullet[0][0] = player[0][0];
+	bullet[0][1] = player[0][1] - boxPixelsY;
+	bullet[0][exists] = true;
+	sf::Clock bulletClock;
+	sf::Texture bulletTexture;
+	sf::Sprite bulletSprite;
+	bulletTexture.loadFromFile("Textures/bullet.png");
+	bulletSprite.setTexture(bulletTexture);
+	bulletSprite.setTextureRect(sf::IntRect(0, 0, boxPixelsX, boxPixelsY));
+
+//////////////////////////////////////////////INITIALIZING FLEA SPRITES
+	float Flea[1][2];
+	int FleaX=rand()%27+1;
+	Flea[0][0]=FleaX*boxPixelsX;
+	Flea[0][1]=-1*boxPixelsY;
+	cout<<Flea[0][0]<<" "<<Flea[0][1]<<endl;
+	sf::Texture FleaTexture;
+	sf::Sprite FleaSprite;
+	FleaTexture.loadFromFile("Textures/flea.png");
+	FleaSprite.setTexture(FleaTexture);
+	FleaSprite.setTextureRect(sf::IntRect(32, 0, boxPixelsX, boxPixelsY));	
+
+///////////////////////////////////////////////////WINDOW IS OPEN MENU
+while(window.isOpen()) {	
+				//BACKGROUND
+				window.draw(backgroundSprite);
+				//CALLING FUNTION TO DRAW LIVES(HEARTS) ON SCREEN
+				drawLives(window, Life, LivesSprite, lives);
+				//CALLING FUNCTION TO CREATE MUSHROOMS				
+				drawMushroom(window, Mushroom, MushroomSprite,MushroomSpriteHalf,MushroomChecker,MushroomSpritePoison,MushroomSpritePoisonHalf, RandomLocation);
+				//DRAWING PLAYER
+				drawPlayer(window, player, playerSprite);
+				//Function that moves and even DRAWS the Centipede
+				MoveCentipedeOneRow(window, Centipede, CentipedeSprite, CentipedeHeadSprite, CentipedeDirection,Mushroom,CentipedeMushroomEdge0,
+				CentipedeMushroomEdge1, CentipedeHitBottom, CentipedeHitBottomCount, CentipedeHeadSpriteR, HeadSpriteTime, speed, level,
+				CentipedeSprite2, CentipedeHeadSprite2,CentipedeHeadSprite2R,CentipedeSprite3, CentipedeHeadSprite3,CentipedeHeadSprite3R, lives);
+				//FUNCTION THAT CHECKS COLLISION BETWEEN PLAYER AND CENTIPEDE
+				PlayerCentipede(player, Centipede, bullet, lives, NewLifeCheck, HeadSpriteTime, KillBuffer);  						
+
+				//A VARIABLE WHICH WILL BE USED TO PERFECTLY DRAW THE MUSHROOMS ON THE BOARD;
+				// IF MUSHROOMCHECKER==0, ONLY THEN THE MUSHROOMS WITH RANDOM VALUES WILL BE GENERATED.
+				//IF THIS MUSHROOMCHECKER++ IS NOT USED, THEN MUSHROOMS WILL BE GENERATED EVERY INSTANT 
+				MushroomChecker++;
+				
+				//A CONDITION WHICH EVALUTES THE SHOOTING OF BULLET OR NOT
+				if (BulletShoot)
+				{
+						//FUNCTION WHICH DRAWS BULLET SPRITES
+						drawBullet(window, bullet, bulletSprite);
+						//FUNCTION WHICH MOVES BULLET SPRITES
+						moveBullet(bullet, bulletClock, player,BulletShoot);
+				}
+				//THIS EVENT CHCKER IS VITAL FOR THE MOVEMENT OF PLAYER AND BULLET
+				sf::Event Event;
+				while (window.pollEvent(Event)) {
+					switch (Event.type) {
+						case sf::Event::Closed:
+							return 0;
+							break;
+
+						case sf::Event::KeyPressed:
+							if (Event.key.code == sf::Keyboard::Space) {
+								BulletShoot = true;
+									if (BulletShoot) {
+								shootingSound.play();
+								}
+							} 
+							else {
+								movePlayer(player, bullet, Event, BulletShoot, Mushroom);
+							}
+							break;
+					}
+				}
+				//CHECKS IF BULLET HITS MUSHROOM OR NOT
+				ShootCheckMushroom(Mushroom, bullet, player,BulletShoot, Centipede, Score, PoisonMushroomNumber); 
+				//CHECKS IF BULLET HITS CENTIPEDE OR NOT
+				ShootCheckCentipede(Centipede,bullet,player,BulletShoot, Mushroom, MushroomChecker, RandomLocation, HeadSpriteTime, speed, Score, NewLifeCheck,
+				lives,level, PoisonMushroomNumber);
+				//CHECKS IF PLAYER TOUCHES A POISONOUS MUSHROOM OR NOT
+				PoisonMushroomCheck(Mushroom,player, bullet, lives, NewLifeCheck, HeadSpriteTime, KillBuffer);
+					
+					//IF LEVEL>1, AND 3 POISON MUSHROOMS IN PLAYER AREA THEN A FLEA COMES
+					if(level>1 && PoisonMushroomNumber==3)
+					{
+					drawFlea(window, Flea, FleaSprite, Mushroom);	//FUNCTION TO DRAW FLEA				
+						if(soundcheck==0)FleaSound.play(); //FLEA SOUND EFFECT
+					soundcheck++;
+					}
+				window.draw(ScoreText); //TO SHOW THE SCORE OF THE PLAYER
+				ScoreText.setString(to_string(Score));	
+					
+//////////////////////////////////////////////////////////////////////////////IF PLAYER LOSES ALL HIS LIVES////////////////////////////////////////////
+					if(lives==0){
+						window.draw(FinalText);
+						ScoreText.setCharacterSize(72);
+						ScoreText.setPosition(14*boxPixelsX,18*boxPixelsY);
+						ScoreText.setString(to_string(Score));					
+						window.draw(ScoreText);			
+							for(int i=0; i<1200; i++){
+								Mushroom[i][0]=-200;
+								Mushroom[i][1]=200;
+							}
+						/////////////ELIMINATES PLAYER BY PLACING HIM OUT OF THE SCREEN
+						player[0][0] = -400;
+						player[0][1] = -400;
+						bullet[0][0] = -400;
+						bullet[0][1] = -400;		
+							if(DeathSoundCheck==0)MoyeSound.play(); //SOUND EFFECT
+						MoyeSound.setVolume(50);
+						DeathSoundCheck++;
+						bgMusic.setVolume(1);
+						}
+///////////////////////////CONDITION WHICH IF TRUE, DISPLAYS THE NUMBER OF LEVELS					
+					if(lives>0){
+					window.draw(LevelText);
+					window.draw(LevelNumberText);	
+					LevelNumberText.setString(to_string(level));					
+					}
+				window.display();
+				window.clear();
+			}
+return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//moving PLAYER function///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void movePlayer(float player[][2], float bullet[][3], sf::Event Event, bool& BulletShoot, float Mushroom[][6]) {
+///////////////////////Initializing Bools that will help us to determine whether the player can move in theSPECIFIC DIRECTION or NOT
+bool Right =false;
+bool Left =false;
+bool Up =false;
+bool Down=false;
+	for(int i=0; i<1200; i++)
+	{
+		if(Mushroom[i][0]-player[0][0]>=-40 && Mushroom[i][0]-player[0][0]<=40 && Mushroom[i][1]==player[0][1] && Mushroom[i][3]==0) Left=true;
+		if(Mushroom[i][0]-player[0][0]>=-40 && Mushroom[i][0]-player[0][0]<=40 && Mushroom[i][1]==player[0][1] && Mushroom[i][3]==0) Right=true;
+		if(Mushroom[i][1]-player[0][1]>=-40 && Mushroom[i][1]-player[0][1]<=40 && Mushroom[i][0]-player[0][0]==0 && Mushroom[i][3]==0) Down=true;
+		if(Mushroom[i][1]-player[0][1]>=-40 && Mushroom[i][1]-player[0][1]<=40 && Mushroom[i][0]-player[0][0]==0 && Mushroom[i][3]==0) Up=true;
+	}
+		if (Event.key.code == sf::Keyboard::Space) {
+			BulletShoot = true;
+		}
+		if (Event.key.code == sf::Keyboard::Left && player[0][0] > 0 && Left==false)  {
+			player[0][0] -= 32;
+			if (!BulletShoot)bullet[0][0] -= 32;
+		} 
+		else if (Event.key.code == sf::Keyboard::Right && player[0][0] < 29 * boxPixelsX && Right==false) {
+				player[0][0] += 32;
+				if (!BulletShoot)bullet[0][0] += 32;
+		}
+		if (Event.key.code == sf::Keyboard::Up && player[0 ][1] > 22 * boxPixelsY && Up==false) {
+			player[0][1] -= 32;
+			if (!BulletShoot)bullet[0][1] -= 32;
+		}
+		else if (Event.key.code == sf::Keyboard::Down && player[0][1] < 27 * boxPixelsY && Down==false) {
+				player[0][1] += 32;
+				if (!BulletShoot)bullet[0][1] += 32;
+		}
+///////////IF THE PLAYER MOVES A DIRECTION, WE ALSO MAKE SURE THE BULLET SPRIET'S VALUES ARE UPDATED IF BULLET SHOOT IS FALSE;	
+/////////////////ANOTHER CHECK TO GET REFRESH VALUES
+/////////////////IF THERE IS A MUSHROOM IN THE NEXT BOXPIXEL TO PLAYER, THE PLAYER CAN NOT MOVE THERE
+	for(int i=0; i<500; i++)
+	{
+		if(Mushroom[i][0]-player[0][0]!=-32 && Mushroom[i][1]==player[0][1]) Left=false;
+		if(Mushroom[i][0]-player[0][0]!=32 && Mushroom[i][1]==player[0][1]) Right=false;
+		if(Mushroom[i][1]-player[0][1]!=32  && Mushroom[i][0]-player[0][0]==0) Down=false;
+		if(Mushroom[i][1]-player[0][1]!=-32  && Mushroom[i][0]-player[0][0]==0) Up=false;
+	}
+
+}
+/////////////drawing MUSHROOMS function////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void drawMushroom(sf::RenderWindow& window, float Mushroom[][6],sf::Sprite& MushroomSprite, sf::Sprite& MushroomSpriteHalf,
+				  int& MushroomChecker, sf::Sprite& MushroomSpritePoison,sf::Sprite& MushroomSpritePoisonHalf, int RandomLocation){
+	for (int i = 0; i < 1200; i++){
+		if (MushroomChecker == 0 && i<=24){ //THIS IF CONDITION IS IMP, AS IT MAKES SURE MUSHROOMS ARE RANDOMLY GENERATED ONLY ONCE
+			int n=0;
+				do{
+				n=((rand() % 21)+1);
+				}
+				while(n==RandomLocation/boxPixelsY);
+		Mushroom[i][0] = ((rand() % 26)+2) * boxPixelsX;	//X-COORDINATES
+		Mushroom[i][1] = n * boxPixelsY;					//Y COORDINATES
+		Mushroom[i][2] = 2;									//BULLET HITS COUNTER
+		Mushroom[i][3] =0;									//THIS TELLS THAT WE WANT NORMAL YELLOW MUSHROOMS OR POISONOUS MUSHROOMS
+		Mushroom[i][4] =0;
+		Mushroom[i][5] =0;
+	}
+		if(Mushroom[i][2]==2 && Mushroom[i][3]==0){         //CONDITION TO DRAW FULL YELLOW MUSHROOM
+			MushroomSprite.setPosition(Mushroom[i][0], Mushroom[i][1]);
+			window.draw(MushroomSprite);
+		}
+		else if(Mushroom[i][2]==1 && Mushroom[i][3]==0){	//HALF YELLOW MUSHROOM
+				MushroomSpriteHalf.setPosition(Mushroom[i][0], Mushroom[i][1]);
+				window.draw(MushroomSpriteHalf);	
+		}
+		if(Mushroom[i][2]==2 && Mushroom[i][3]==1){			//FULL POISONOUS MUSHROOM
+				MushroomSpritePoison.setPosition(Mushroom[i][0], Mushroom[i][1]);
+				window.draw(MushroomSpritePoison);
+		}
+		else if(Mushroom[i][2]==1 && Mushroom[i][3]==1){	//HALF POISONOUS MUSHROOM
+				MushroomSpritePoisonHalf.setPosition(Mushroom[i][0], Mushroom[i][1]);
+				window.draw(MushroomSpritePoisonHalf);
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////SHOOT CHECKER FUNCTION////////////////////////////////////////////////////////
+void ShootCheckMushroom(float Mushroom[][6], float bullet[][3], float player[][2], bool &BulletShoot, float Centipede[][6], int& Score, int& PoisonMushroomNumber) {
+    for (int i = 0; i < 1200; i++) {
+        // Check if the bullet and mushroom COLLIDE, WE USE A SPECIFIC RANGE AND NOT EXACT VALUES
+        if (bullet[0][0] <= Mushroom[i][0] + 20 && bullet[0][0] + 20 >= Mushroom[i][0] &&
+		   bullet[0][1] <= Mushroom[i][1] + 20 && bullet[0][1] + 20 >= Mushroom[i][1]  &&
+		   BulletShoot == true) {
+				
+			BulletShoot=false;
+			//IF Bullet hit the mushroom, decrement the hit count 
+            Mushroom[i][2]--;
+				if(Mushroom[i][2]==0){ //IF MUSHROOM IS HOT TWICE, WE TAKE IT OUT OF THE SCREEN
+					for(int j=0; j<15; j++){
+						if(Centipede[j][0] - Mushroom[i][0] >= -40 && Centipede[j][0] - Mushroom[i][0] <=40  &&
+						Centipede[j][1]==Mushroom[i][1]){
+							Centipede[j][2]=1;
+							}
+					}
+					Mushroom[i][0]=-20;
+					Mushroom[i][1]=-20;
+					Score++;			
+				if(i>=100 && Mushroom[i][3]==1){
+					PoisonMushroomNumber--;
+					cout<<PoisonMushroomNumber<<endl;
+				}
+			}
+		// Reset the bullet position
+        bullet[0][0] = player[0][0];
+        bullet[0][1] = player[0][1] - boxPixelsY;
+		}
+   	}
+}
+///////////////////////////////////////////////////SHOOT CHECKER function///////////////////////////////////////////////////////////////////////////
+void ShootCheckCentipede(float Centipede[][6], float bullet[][3], float player[][2], bool &BulletShoot, float Mushroom[][6], int& MushroomChecker,
+						int RandomLocation, bool& HeadSpriteTime, int& speed, int& Score, bool& NewLifeCheck, int& lives, int& level,
+						int& PoisonMushroomNumber){
+static int MushroomBuild=100;  		//IF A CENTIPEDE SEGMENT GETS HIT, THE NEW MUSHROOM WILL BE FORMED USING MUSHROOM BUILD VAARIABLE
+static int DeadCentipede=0; 
+    for (int i = 0; i < 15; i++) {
+        if (bullet[0][0] <= Centipede[i][0] + 20 && bullet[0][0] + 20 >= Centipede[i][0] &&
+		   bullet[0][1] <= Centipede[i][1] + 20 && bullet[0][1] + 20 >= Centipede[i][1]&&
+		   BulletShoot == true) {
+				if(Centipede[i][2]==0)Score+=10; //SCORING EQUATIONS FOR HEAD AND BODY SEGMENT
+				else if(Centipede[i][2]==1)Score+=20;
+				Mushroom[MushroomBuild][0]=Centipede[i][0];	 //NEW MUSHROOM TAKES PLACES OF THE CENTIPEDE SEGMENT HIT
+				Mushroom[MushroomBuild][1]=Centipede[i][1];
+				Mushroom[MushroomBuild][2]=2;
+				if(Mushroom[MushroomBuild][0]==0 || Mushroom[MushroomBuild][0]==29*boxPixelsX){
+					Mushroom[MushroomBuild][0]=-200;
+					Mushroom[MushroomBuild][1]=-200;;
+				}
+				if(Centipede[i][1]<=27*32 && Centipede[i][1]>=22*32){	//IF WE ARE IN THE PLAYER AREA, POISONOUS MUSHROOMS ARE FORMED
+					Mushroom[MushroomBuild][3]=1;
+					PoisonMushroomNumber++;
+				}
+			MushroomBuild++;
+			DeadCentipede++;
+			Centipede[i][0]=-200000;	
+			Centipede[i][1]=-200000;
+			Centipede[i+1][2]=1;
+			// Reset the bullet position
+            bullet[0][0] = player[0][0];
+            bullet[0][1] = player[0][1] - boxPixelsY;
+        	BulletShoot=false;
+			break;
+		}
+   	}
+	if(DeadCentipede==12 && HeadSpriteTime==false){
+		int limit=0;
+		limit=12;		//Limit Variable will help us to create head sprites, in each advanced levels
+		MushroomChecker=0;
+		HeadSpriteTime=false;
+		lives++;		//If all Centipede segments are dead then, lives and levels are incremented
+		level++;
+		cout<<level<<endl;
+			if(speed==1){ 	//in each advanced levels speed increases
+				speed=2;
+			}
+			else if(speed==2) {
+				speed=4;
+			}
+		for(int i=0; i<1200; i++){
+				if(Mushroom[i][1]==RandomLocation){
+					Mushroom[i][0]=-200;
+					Mushroom[i][1]=-200;
+				}
+
+		}
+////////////////regeneration of new centipede for a new level		
+		for(int i=0, j=RandomLocation, k=384; i<abs(limit-(level-1)); k+=32, i++){
+			Centipede[i][3]=0;
+			Centipede[i][0]=k;
+			Centipede[i][1]=j;
+			Centipede[i][4]=0;
+				if(i>0 && MushroomChecker==0)
+					Centipede[i][2]=0;
+				else if(i==0 && MushroomChecker==0)
+					Centipede[i][2]=1;
+			}
+////////////////////Initializing or giving the Head Sprites that will come in the end
+		for(int i=limit-(level-1),k=31, j=22, c=RandomLocation; i<15; i++, j++, k+=29){
+			if(i>11){
+				Centipede[i][0]=k*boxPixelsX;
+				Centipede[i][1]=j*boxPixelsY;
+			}
+			else if(i<=11){
+				Centipede[i][0]=k*boxPixelsX;
+				Centipede[i][1]=RandomLocation;
+			}
+				Centipede[i][3]=0;
+				Centipede[i][4]=0;
+				Centipede[i][2]=1;
+		}
+	DeadCentipede=0;	//Dead Centipede counter reset
+	}
+
+	else if(DeadCentipede==15 && HeadSpriteTime==true){
+			int limit=0;
+			limit=12;		//Limit Variable will help us to create head sprites, in each advanced levels
+			MushroomChecker=0;
+			HeadSpriteTime=false;
+			lives++;		//If all Centipede segments are dead then, lives and levels are incremented
+			level++;
+			cout<<level<<endl;
+				if(speed==1){ 	//in each advanced levels speed increases
+					speed=2;
+				}
+				else if(speed==2) {
+					speed=4;
+				}
+			for(int i=0; i<1200; i++){
+					if(Mushroom[i][1]==RandomLocation){
+						Mushroom[i][0]=-200;
+						Mushroom[i][1]=-200;
+					}
+
+			}
+	////////////////regeneration of new centipede for a new level		
+			for(int i=0, j=RandomLocation, k=384; i<abs(limit-(level-1)); k+=32, i++){
+				Centipede[i][3]=0;
+				Centipede[i][0]=k;
+				Centipede[i][1]=j;
+				Centipede[i][4]=0;
+					if(i>0 && MushroomChecker==0)
+						Centipede[i][2]=0;
+					else if(i==0 && MushroomChecker==0)
+						Centipede[i][2]=1;
+				}
+	////////////////////Initializing or giving the Head Sprites that will come in the end
+			for(int i=limit-(level-1),k=31, j=22, c=RandomLocation; i<15; i++, j++, k+=29){
+				if(i>11){
+					Centipede[i][0]=k*boxPixelsX;
+					Centipede[i][1]=j*boxPixelsY;
+				}
+				else if(i<=11){
+					Centipede[i][0]=k*boxPixelsX;
+					Centipede[i][1]=RandomLocation;
+				}
+					Centipede[i][3]=0;
+					Centipede[i][4]=0;
+					Centipede[i][2]=1;
+			}
+	DeadCentipede=0;	//Dead Centipede counter reset
+	}
+	else if(NewLifeCheck==true){
+		int limit=0;
+		limit=12;
+		MushroomChecker=0;
+		HeadSpriteTime=false;	//TO ESCAPE AN INFINITE LOOP
+		cout<<level<<endl;
+		for(int i=0; i<700; i++){
+			if(Mushroom[i][1]==RandomLocation){
+					Mushroom[i][0]=-200;
+					Mushroom[i][1]=-200;
+			}
+			if(Mushroom[i][2]==1 || Mushroom[i][3]==1)
+			{
+				Mushroom[i][2]=2;
+				Mushroom[i][3]=0;
+				Score++;
+			}
+
+		}
+	/////////////NEW VALUES FOR CENTIPEDE REGENERATION	
+		for(int i=0, j=RandomLocation, k=384; i<abs(limit-(level-1)); k+=32, i++){
+			Centipede[i][3]=0;
+			Centipede[i][0]=k;
+			Centipede[i][1]=j;
+			Centipede[i][4]=0;
+				if(i>0 && MushroomChecker==0)
+					Centipede[i][2]=0;
+				else if(i==0 && MushroomChecker==0)
+					Centipede[i][2]=1;
+		}
+	//Initializing the Head Sprites that will come in the end
+			for(int i=limit-(level-1),k=31, j=22, c=RandomLocation; i<15; i++, j++, k+=29){
+				if(i>11){
+					Centipede[i][0]=k*boxPixelsX;
+					Centipede[i][1]=j*boxPixelsY;
+				}
+				else if(i<=11){
+					Centipede[i][0]=k*boxPixelsX;
+					Centipede[i][1]=RandomLocation;
+				}
+				Centipede[i][3]=0;
+				Centipede[i][4]=0;
+				Centipede[i][2]=1;
+			}
+	DeadCentipede=0;		//Resetting Values
+	NewLifeCheck=false;
+	}
+}
+/////////////////////////////////////////////drawing CENTIPEDE function/////////////////////////////////////////////////////////
+void MoveCentipedeOneRow(sf::RenderWindow& window, float Centipede[][6], sf::Sprite& CentipedeSprite, sf::Sprite& CentipedeHeadSprite
+	,bool& CentipedeDirection, float Mushroom[][6], bool& CentipedeMushroomEdge0, bool& CentipedeMushroomEdge1, bool& CentipedeHitBottom
+	,int& CentipedeHitBottomCount, sf::Sprite& CentipedeHeadSpriteR, bool& HeadSpriteTime, int& speed, int& level, sf::Sprite& CentipedeSprite2, 
+	sf::Sprite& CentipedeHeadSprite2, sf::Sprite& CentipedeHeadSprite2R,sf::Sprite& CentipedeSprite3, 
+	sf::Sprite& CentipedeHeadSprite3, sf::Sprite& CentipedeHeadSprite3R, int& lives){
+	int j=11;
+	for(int i=0; i<=j; i++){
+		if(Centipede[i][2]!=1 && Centipede[i][3]==0 && i<=11){	//////BODY SEGMENT OF CENTIPEDE MOVING LEFT
+				if(lives>0)Centipede[i][0]-=speed; 
+				CheckCentipedeCollision(Centipede, CentipedeDirection, i, CentipedeHitBottom, CentipedeHitBottomCount, HeadSpriteTime);
+				MushroomCentipede(Mushroom, Centipede, CentipedeMushroomEdge0 ,CentipedeMushroomEdge1, i);						
+				drawCentipede(window,Centipede,CentipedeSprite,CentipedeHeadSprite, i, level,
+								CentipedeSprite2,CentipedeHeadSprite2,CentipedeSprite3,CentipedeHeadSprite3); 
+		}
+		if(Centipede[i][2]==1 && Centipede[i][3]==0){		//////////HEAD SEGMENT OF CENTIPEDE MOVING LEFT
+				if(lives>0)Centipede[i][0]-=speed;
+				CheckCentipedeCollision(Centipede, CentipedeDirection, i, CentipedeHitBottom, CentipedeHitBottomCount, HeadSpriteTime);
+				MushroomCentipede(Mushroom, Centipede, CentipedeMushroomEdge0 ,CentipedeMushroomEdge1, i);
+				drawCentipedeHead(window,Centipede,CentipedeHeadSprite, CentipedeHeadSpriteR, i, level,
+								CentipedeHeadSprite2, CentipedeHeadSprite2R,CentipedeHeadSprite3, CentipedeHeadSprite3R);                      
+		}
+		if(Centipede[i][2]!=1 && Centipede[i][3]==1 && i<=11){  ////////////BODY SEGMENT OF CENTIPEDE MOVING RIGHT
+				if(lives>0)Centipede[i][0]+=speed; 
+				CheckCentipedeCollision(Centipede, CentipedeDirection, i, CentipedeHitBottom, CentipedeHitBottomCount, HeadSpriteTime);
+				MushroomCentipede(Mushroom, Centipede, CentipedeMushroomEdge0 ,CentipedeMushroomEdge1, i);
+				drawCentipede(window,Centipede,CentipedeSprite,CentipedeHeadSprite, i, level,
+							CentipedeSprite2,CentipedeHeadSprite2,CentipedeSprite3,CentipedeHeadSprite3);
+				}
+		if(Centipede[i][2]==1 && Centipede[i][3]==1){	//////////////// HEAD SEGMENT OF CENTIPEDE MOVING RIGHT
+				if(lives>0)Centipede[i][0]+=speed;
+				CheckCentipedeCollision(Centipede, CentipedeDirection, i, CentipedeHitBottom, CentipedeHitBottomCount, HeadSpriteTime);
+				MushroomCentipede(Mushroom, Centipede, CentipedeMushroomEdge0 ,CentipedeMushroomEdge1, i);
+				drawCentipedeHead(window,Centipede,CentipedeHeadSprite, CentipedeHeadSpriteR, i, level,
+								CentipedeHeadSprite2, CentipedeHeadSprite2R,CentipedeHeadSprite3, CentipedeHeadSprite3R); 
+				}
+		if(HeadSpriteTime==true)j=14;	//If extra Head Sprites are created then, For loop is changed to accomodate them
+	}
+}
+////////////////////////////////////////////////////DRAW CENTIPEDE FUNCTION//////////////////////////////////////////////////////////////////
+void drawCentipede(sf::RenderWindow& window, float Centipede[][6], sf::Sprite& CentipedeSprite, sf::Sprite& CentipedeHeadSprite, int& i, int& level,
+					sf::Sprite& CentipedeSprite2, sf::Sprite& CentipedeHeadSprite2,sf::Sprite& CentipedeSprite3, sf::Sprite& CentipedeHeadSprite3) {
+///////////////////CHECKING FOR LEVELS TO USE A SPECIFIC COLOR////   
+    if(level%3==1){		
+		CentipedeSprite.setPosition(Centipede[i][0], Centipede[i][1]);
+        window.draw(CentipedeSprite);
+	}
+ 	else if(level%3==2){
+		CentipedeSprite2.setPosition(Centipede[i][0], Centipede[i][1]);
+        window.draw(CentipedeSprite2);
+	}
+	else{
+		CentipedeSprite3.setPosition(Centipede[i][0], Centipede[i][1]);
+	    window.draw(CentipedeSprite3);
+	}
+}
+
+//////////////////////////////////////////////////////DRAW CENTIPEDE HEAD FUNCTION///////////////////////////////////////////////////////////////////
+void drawCentipedeHead(sf::RenderWindow& window, float Centipede[][6], sf::Sprite& CentipedeHeadSprite,sf::Sprite& CentipedeHeadSpriteR, int& i,int& level,
+						sf::Sprite& CentipedeHeadSprite2,sf::Sprite& CentipedeHeadSprite2R,sf::Sprite& CentipedeHeadSprite3,sf::Sprite& CentipedeHeadSprite3R){
+///////////////////TWO CHECKS
+///////////FIRST CHECK FOR LEVEL TO USE A SPECIFIC COLOR
+///////////SECOND FOR DIRECTION   
+    if(level%3==1){
+		if(Centipede[i][3]==0){
+			CentipedeHeadSprite.setPosition(Centipede[i][0], Centipede[i][1]);
+			window.draw(CentipedeHeadSprite);
+		}
+		else {
+			CentipedeHeadSpriteR.setPosition(Centipede[i][0], Centipede[i][1]);
+			window.draw(CentipedeHeadSpriteR);
+		}
+	}
+	else if(level%3==2){
+		if(Centipede[i][3]==0){
+			CentipedeHeadSprite2.setPosition(Centipede[i][0], Centipede[i][1]);
+			window.draw(CentipedeHeadSprite2);
+		}
+		else {
+			CentipedeHeadSprite2R.setPosition(Centipede[i][0], Centipede[i][1]);
+			window.draw(CentipedeHeadSprite2R);
+			}
+	}
+	else{
+		if(Centipede[i][3]==0){
+			CentipedeHeadSprite3.setPosition(Centipede[i][0], Centipede[i][1]);
+			window.draw(CentipedeHeadSprite3);
+			}
+		else {
+			CentipedeHeadSprite3R.setPosition(Centipede[i][0], Centipede[i][1]);
+			window.draw(CentipedeHeadSprite3R);
+		}
+	}
+}
+
+//////////////////////////////////////////////CHECKING CENTIPEDE COLISION WITH THE SCREEN OR GIVEN GRID//////////////////////////////////////////////////////////////////
+void CheckCentipedeCollision(float Centipede[][6], bool& CentipedeDirection, int& i, bool& CentipedeHitBottom, int& CentipedeHitBottomCount,
+							bool& HeadSpriteTime){
+///////////////////////Check if any segment of the centipede has reached the leftmost or rightmost part of screen
+	if(Centipede[i][1]==864 && Centipede[i][4]== 0){ 
+		Centipede[i][4] = 1;
+		HeadSpriteTime=true;
+	}
+	if(Centipede[i][1]==704 && Centipede[i][4]== 1) {
+		Centipede[i][4] = 0;
+	}
+	if (Centipede[i][0] == 0 && Centipede[i][1]<=864 && Centipede[i][4]== 0) {
+		Centipede[i][1] += boxPixelsY;
+		Centipede[i][3]=1;
+	}
+    if (Centipede[i][0] == 928 && Centipede[i][1]<=864 && Centipede[i][4]== 0) {
+		Centipede[i][1] += boxPixelsY;
+		Centipede[i][3]=0;
+	}
+	if (Centipede[i][0] == 0 && Centipede[i][1]<=864 && Centipede[i][4]== 1) {
+		Centipede[i][1] -= boxPixelsY;
+		Centipede[i][3]=1;
+		CentipedeHitBottomCount++;
+	}
+    if (Centipede[i][0] == 928 && Centipede[i][1]<=864 && Centipede[i][4]== 1) {
+		Centipede[i][1] -= boxPixelsY;
+		Centipede[i][3]=0;
+		CentipedeHitBottomCount++;					
+	}	
+	if (Centipede[i][1]>864 &&	Centipede[i][3]==1){
+		Centipede[i][1] -= boxPixelsY*2;
+		Centipede[i][3]=0;
+	}
+	if (Centipede[i][1]>864 &&	Centipede[i][3]==0){
+		Centipede[i][1] -= boxPixelsY*2;
+		Centipede[i][3]=1;
+	}
+}
+            
+////////////////////////////////////////////////////////////COLISION CHECK BETWEEN CENTIPEDE AND MUSHROOM/////////////////////////////////////////////////////////////////
+void MushroomCentipede(float Mushroom[][6], float Centipede[][6], bool& CentipedeMushroomEdge0, bool& CentipedeMushroomEdge1, int& i){
+    for(int j=0; j<1200; j++){
+        if((Centipede[i][0]==Mushroom[j][0]-boxPixelsX/2 || Centipede[i][0]==Mushroom[j][0]+boxPixelsX/2)  
+            && Centipede[i][1]==Mushroom[j][1]){
+			if(Centipede[i][3]==0 && Centipede[i][4]==0){
+				Centipede[i][1] += boxPixelsY;
+				Centipede[i][3]=1;
+				break;
+            }
+            if(Centipede[i][3]==1 && Centipede[j][4]==0){
+				Centipede[i][1] += boxPixelsY;
+				Centipede[i][3]=0;																
+				break;
+            }
+            if(Centipede[i][3]==1 && Centipede[i][4]==1){
+				Centipede[i][1] -= boxPixelsY;
+				Centipede[i][3]=0;															
+				break;
+            }
+            if(Centipede[i][3]==0 && Centipede[i][4]==1){
+				Centipede[i][1] -= boxPixelsY;
+				Centipede[i][3]=1;								
+				break;
+            }
+		}
+	}      
+}
+/////////////////////////////////////////COLISION BETWEEN PLAYER AND MUSHROOM//////////////////////////////////////////////////////////////////////////
+void PlayerCentipede(float player[][2], float Centipede[][6], float bullet[][3], int& lives, bool& NewLifeCheck, bool& HeadSpriteTime,
+ 					sf::SoundBuffer& KillBuffer){
+	for(int i=0; i<15; i++){
+		if((Centipede[i][0]-player[0][0]==32 && Centipede[i][1]==player[0][1]) || 
+		   (Centipede[i][0]-player[0][0]==-32 && Centipede[i][1]==player[0][1]) ||
+		   (Centipede[i][1]-player[0][1]==0 && Centipede[i][0]==player[0][0]) ||
+		   (Centipede[i][1]-player[0][1]==0 && Centipede[i][0]==player[0][0]) ){
+				/////////////IF COLLIOSION HAPPENS WE MAKE THE PLAYER GO TO THE DEFAULT POSITION
+				player[0][0] = (gameColumns / 2) * boxPixelsX;
+				player[0][1] = (gameColumns * 3 / 4) * boxPixelsY;
+				bullet[0][0] = (gameColumns / 2) * boxPixelsX;
+				bullet[0][1] = (gameColumns * 3 / 4) * boxPixelsY;
+				//////////////////LIVF GES ONE DOWN
+				lives--;
+				NewLifeCheck=true;		//A BOOL TURNED TRUE	
+					sf::Sound KillSound;	//GENERATION A KILL SOUND EFFECT
+					KillSound.setBuffer(KillBuffer);
+					KillSound.setVolume(200);
+					KillSound.play();
+			}
+	}
+}
+/////////////////////////////POISON MUSHROOM AND PLAYER COLISION DETECTION FUNCTION///////////////////////////////////
+void PoisonMushroomCheck(float Mushroom[][6], float player[][2], float bullet[][3], int& lives, bool& NewLifeCheck, bool& HeadSpriteTime,
+ 						sf::SoundBuffer& KillBuffer){
+	for(int i=0; i<1200; i++){
+		if(Mushroom[i][3]==1){ //////////POISON MUSHROOM CHECK
+			if(Mushroom[i][0] <=player[0][0] + 20 &&		///////////RANGE CHECK
+          	  Mushroom[i][0] + 20 >= player[0][0] && Mushroom[i][1]==player[0][1]){
+					player[0][0] = (gameColumns / 2) * boxPixelsX;			/////////RESET VALUES
+					player[0][1] = (gameColumns * 3 / 4) * boxPixelsY;
+					bullet[0][0] = (gameColumns / 2) * boxPixelsX;
+					bullet[0][1] = (gameColumns * 3 / 4) * boxPixelsY;
+					lives--;				///////INE LIFE DOWN
+					NewLifeCheck=true;
+						sf::Sound KillSound;
+						KillSound.setBuffer(KillBuffer);
+						KillSound.setVolume(200);
+						KillSound.play();
+			}
+		}
+	}
+}
+/////////////////////////////////////////////////////////DRAWING PLAYER FUNCTION///////////////////////////////////////////////////////////////////////////
+//DRAWING PLAYER FUNCTION
+void drawPlayer(sf::RenderWindow& window, float player[][2], sf::Sprite& playerSprite) {
+	playerSprite.setPosition(player[0][0], player[0][1]);
+	window.draw(playerSprite);
+}
+
+///////////////////////////////MOVING BULLET FUNCTION////////////////////////////////////////////////////////////////////////////////////
+void moveBullet(float bullet[][3], sf::Clock& bulletClock,float player[][2], bool &BulletShoot){
+	if (bulletClock.getElapsedTime().asMilliseconds() < 1)
+		return;
+	bulletClock.restart();
+	bullet[0][1] -= 16;	 
+	if (bullet[0][1] < 0){
+		bullet[0][0] = player[0][0];
+		bullet[0][1] = player[0][1] - boxPixelsY;
+		BulletShoot = false;
+	}
+}
+
+///////////////////////////////////DRAWING BULLET FUNCTION/////////////////////////////////////////////////////////////
+void drawBullet(sf::RenderWindow& window, float bullet[][3], sf::Sprite& bulletSprite){
+	bulletSprite.setPosition(bullet[0][0], bullet[0][1]);
+	window.draw(bulletSprite);
+}
+
+///////////////////////////////////////DRAWING LIVES FUNCTION//////////////////////////////////////////////////
+void drawLives(sf::RenderWindow& window, float Life[][2], sf::Sprite& LivesSprite, int& lives)
+{
+	for(int i=0, j=25; i<lives; j++,i++)
+	{
+		if(i<5){
+			Life[i][0]=j*boxPixelsX;			/////CHECK TO MAKE AN ASTHETIC LOOK ON MAIN SCREEN
+			Life[i][1]=28*boxPixelsY;
+			LivesSprite.setPosition(Life[i][0], Life[i][1]);
+			window.draw(LivesSprite);	
+		}
+		else{
+			Life[i][0]=(j-5)*boxPixelsX;
+			Life[i][1]=29*boxPixelsY;
+			LivesSprite.setPosition(Life[i][0], Life[i][1]);
+			window.draw(LivesSprite);	
+		}	
+	}
+
+}
+//////////////////////////////////////DRAWING FLEA FUNCTION/////////////////////////////////////////////////////////////
+void drawFlea(sf::RenderWindow& window, float Flea[][2], sf::Sprite& FleaSprite, float Mushroom[][6]){
+	Flea[0][1]+=4;
+	FleaSprite.setPosition(Flea[0][0], Flea[0][1]);
+	window.draw(FleaSprite);
+ }
